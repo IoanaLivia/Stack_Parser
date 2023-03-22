@@ -39,14 +39,17 @@ StackParser::StackParser(istream &in, istream &fin, ofstream &fout) {
         splitLine.clear();
     }
 
+
     getline(in, this->initStackSymbol);
 
     while(getline(in, line)) {
+        // in case of empty lines
+        if (line.size() == 0) break;
         splitLine = splitString(line, " ");
         Transition* t = new Transition(splitLine[0], splitLine[4], splitLine[1], splitLine[2], splitLine[3]);
         this->transitions.push_back(t);
-        cout<<*t<<endl;
-        splitLine.clear();
+        //cout<<*t<<endl;
+        splitLine.clear();;
     }
 
     // //sort(transitions.begin(), transitions.end());
@@ -70,75 +73,75 @@ StackParser::StackParser(istream &in, istream &fin, ofstream &fout) {
 //
 
 void StackParser::parse() {
+    queue<ParseState> q;
+    //ParseState(const string currState, stack<string> s, string currInput, string currOutput);
+    stack<string> s;
+    string output = "";
+    s.push(initStackSymbol);
+    ParseState y = ParseState(initState, s, inputs[0], output, {});
+    q.push(y);
+    //cout<<p;
 
+    while (!q.empty()) {
+        ParseState now = q.front();
+        q.pop();
+
+        for (const Transition *t: graph[now.currState]) {
+            string pInitState = t->endState, pInput = now.currInput, pOutput = now.currOutput;
+            vector<Transition> pPath = now.path;
+            stack<string> pS = now.s;
+
+           // cout << "Suntem la tranzitia: " << *t<<"\n";
+
+                // verificat daca inputul tranzitiei poate fi satisfacut
+            if (t->input == "^" || t->input == string(1, pInput[0])) {
+                //cout<<"input, putem continua cu : "<<t->input<<" "<<pInput[0]<<endl;
+                if (t->input != "^") {
+                    pInput.erase(pInput.begin());
+                }
+
+                if (t->stackRemove == "^" || ((!(pS.empty())) && (t->stackRemove == pS.top()))) {
+                   // cout<<"stack, putem continua cu : "<<t->stackRemove<<" "<<pS.top()<<endl;
+
+                    if (t->stackRemove != "^") pS.pop();
+
+                    if(t->stackAdd != "^") {
+                        string aux = t->stackAdd;
+                        for (int i =  aux.size() - 1; i >= 0; i--) {
+                            //cout<<"adding : "<<aux[i]<<"\n";
+                            pS.push(string(1,  aux[i]));
+                        }
+
+                       //cout<<"acum avem un stack de dim "<<pS.size()<<" cu pS.top() "<<pS.top()<<endl;
+                    }
+
+                    if(t->output != "^") {
+                        pOutput += t->output;
+                    }
+
+                    pPath.push_back(*t);
+                    ParseState x = ParseState(t->endState, pS, pInput, pOutput, pPath);
+                    //cout<<"we would push: "<<x<<"\n";
+                    if (this->hasFinalStates && finalStates.find(x.currState) != finalStates.end()) {
+                        cout<<"Final state with output : "<<x.currOutput<<"\n";
+                        cout<<"And path:\n";
+                        for (const Transition tr: pPath) {
+                            cout<<tr<<"\n";
+                        }
+                        cout<<"input: "<<x.currInput<<"\n";
+                    }
+                    else if (!this->hasFinalStates && (x.s).size() == 0) {
+                        cout<<"Final bbb state with output : "<<x.currOutput<<"\n";
+                    }
+                    else
+                    {
+                        q.push(x);
+                    }
+                }
+            }
+        }
+    }
 }
-//void StackParser::parse() {
-//    queue<ParseState> q;
-//    //ParseState(const string currState, stack<string> s, string currInput, string currOutput);
-//    stack<string> s;
-//    string output = "";
-//    s.push(initStackSymbol);
-//    ParseState y = ParseState(initState, s, inputs[0], output, {});
-//    q.push(y);
-//    //cout<<p;
-//
-//    while (!q.empty()) {
-//        ParseState now = q.front();
-//        q.pop();
-//
-//        for (const Transition *t: graph[now.currState]) {
-//            string pInitState = t->endState, pInput = now.currInput, pOutput = now.currOutput;
-//            vector<Transition> pPath = now.path;
-//            stack<string> pS = now.s;
-//
-//           // cout << "Suntem la tranzitia: " << *t<<"\n";
-//
-//                // verificat daca inputul tranzitiei poate fi satisfacut
-//            if (t->input == "^" || t->input == string(1, pInput[0])) {
-//                //cout<<"input, putem continua cu : "<<t->input<<" "<<pInput[0]<<endl;
-//                if (t->input != "^") {
-//                    pInput.erase(pInput.begin());
-//                }
-//
-//                if (t->stackRemove == "^" || ((!(pS.empty())) && (t->stackRemove == pS.top()))) {
-//                   // cout<<"stack, putem continua cu : "<<t->stackRemove<<" "<<pS.top()<<endl;
-//
-//                    if (t->stackRemove != "^") pS.pop();
-//
-//                    if(t->stackAdd != "^") {
-//                        string aux = t->stackAdd;
-//                        for (int i =  aux.size() - 1; i >= 0; i--) {
-//                            //cout<<"adding : "<<aux[i]<<"\n";
-//                            pS.push(string(1,  aux[i]));
-//                        }
-//
-//                       //cout<<"acum avem un stack de dim "<<pS.size()<<" cu pS.top() "<<pS.top()<<endl;
-//                    }
-//
-//                    if(t->output != "^") {
-//                        pOutput += t->output;
-//                    }
-//
-//                    pPath.push_back(*t);
-//                    ParseState x = ParseState(t->endState, pS, pInput, pOutput, pPath);
-//                    cout<<"we would push: "<<x<<"\n";
-//                    if (finalStates.find(x.currState) != finalStates.end()) {
-//                        cout<<"Final state with output : "<<x.currOutput<<"\n";
-//                        cout<<"And path:\n";
-//                        for (const Transition tr: pPath) {
-//                            cout<<tr<<"\n";
-//                        }
-//                        cout<<"input: "<<x.currInput<<"\n";
-//                    }
-//                    else
-//                    {
-//                        q.push(x);
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
 
 // verificam daca putem scoate din stiva ce e cerut
 // adaugam in stiva ce ni se spune
