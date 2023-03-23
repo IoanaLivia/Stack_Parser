@@ -15,8 +15,6 @@ using namespace std;
 class ParseState {
 public:
     ParseState(const string currState, stack<string> s, string currInput, string currOutput, vector<Transition> path);
-    void addToStack(string input);
-    void removeFromStack();
     string currState;
     string currInput;
     string currOutput;
