@@ -124,11 +124,11 @@ void StackParser::parse() {
                     //cout<<"we would push: "<<x<<"\n";
                     if (this->hasFinalStates && finalStates.find(x.currState) != finalStates.end()) {
                         cout<<"Final state with output : "<<x.currOutput<<"\n";
-                        cout<<"And path:\n";
-                        for (const Transition tr: pPath) {
-                            cout<<tr<<"\n";
-                        }
-                        cout<<"input: "<<x.currInput<<"\n";
+//                        cout<<"And path:\n";
+//                        for (const Transition tr: pPath) {
+//                            cout<<tr<<"\n";
+//                        }
+//                        cout<<"input: "<<x.currInput<<"\n";
                     }
                     else if (!this->hasFinalStates && (x.s).size() == 0) {
                         cout<<"Final bbb state with output : "<<x.currOutput<<"\n";
