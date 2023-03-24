@@ -1,7 +1,3 @@
-//
-// Created by ioana on 3/19/2023.
-//
-
 #include "Transition.h"
 #include "auxiliary.h"
 #include <vector>

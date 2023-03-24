@@ -1,7 +1,3 @@
-//
-// Created by ioana on 3/19/2023.
-//
-
 #ifndef TC_PROIECT_1_4_STACKPARSER_H
 #define TC_PROIECT_1_4_STACKPARSER_H
 

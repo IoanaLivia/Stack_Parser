@@ -1,0 +1,389 @@
+//main.cpp
+
+#include <iostream>
+#include "StackParser.h"
+
+using namespace std;
+
+int main()
+{
+    ifstream in("stackParser.in");
+    ifstream fin("input.in");
+
+    ofstream fout("output.out");
+
+    StackParser parser(in, fin);
+
+    parser.parse(fout);
+
+    in.close();
+    fin.close();
+    fout.close();
+
+    return 0;
+}
+
+//StackParser.h
+
+#ifndef TC_PROIECT_1_4_STACKPARSER_H
+#define TC_PROIECT_1_4_STACKPARSER_H
+
+#include <fstream>
+#include <vector>
+#include <unordered_map>
+#include <set>
+#include "Transition.h"
+using namespace std;
+
+class StackParser {
+public:
+    StackParser(istream&, istream&);
+    void parse(ofstream&);
+    vector<string> inputs;
+    static const string LAMBDA;
+    bool hasFinalStates;
+    string initState;
+    string initStackSymbol;
+    set<string> finalStates;
+    vector<string> states;
+    vector<Transition*> transitions;
+    unordered_map<string, vector<Transition*>> graph;
+    set<string> inputAlph;
+    set<string> outputAlph;
+};
+#endif //TC_PROIECT_1_4_STACKPARSER_H
+
+
+// StackParser.cpp
+
+#include "StackParser.h"
+#include "Transition.h"
+#include "auxiliary.h"
+#include "ParseState.h"
+#include <iostream>
+#include <set>
+#include <queue>
+#include <algorithm>
+using namespace std;
+
+const string StackParser::LAMBDA = "^";
+
+StackParser::StackParser(istream &in, istream &fin) {
+    string line;
+    vector<string> splitLine = {};
+
+    getline(in, line);
+
+    splitLine = splitString(line, " ");
+
+    for (string &s: splitLine) {
+        this->inputAlph.insert(s);
+    }
+
+    splitLine.clear();
+
+    getline(in, line);
+
+    splitLine = splitString(line, " ");
+
+    for (string &s: splitLine) {
+        this->outputAlph.insert(s);
+    }
+
+    splitLine.clear();
+
+    while(getline(fin, line))
+    {
+        inputs.push_back(line);
+    }
+
+    getline(in, line);
+    this->states = splitString(line, " ");
+
+    getline(in, this->initState);
+    getline(in, line);
+    line == "1" ? this->hasFinalStates = true : this->hasFinalStates = false;
+
+    if (this->hasFinalStates) {
+        (getline(in, line));
+        splitLine = splitString(line, " ");
+        for (string &s: splitLine) {
+            this->finalStates.insert(s);
+        }
+        splitLine.clear();
+    }
+
+
+    getline(in, this->initStackSymbol);
+
+    while(getline(in, line)) {
+        if (line.size() == 0) break;
+        splitLine = splitString(line, " ");
+        if ((this->inputAlph.find(splitLine[1]) != this->inputAlph.end() || splitLine[1]  == LAMBDA) && (this->outputAlph.find(splitLine[3]) != this->outputAlph.end() || splitLine[3]  == LAMBDA))
+        {
+            Transition* t = new Transition(splitLine[0], splitLine[4], splitLine[1], splitLine[2], splitLine[3]);
+            this->transitions.push_back(t);
+        }
+        splitLine.clear();;
+    }
+
+    for (int i = 0; i < (int)states.size(); ++i) {
+        graph[states[i]] = {};
+    }
+
+    for (int i = 0; i < (int)transitions.size(); ++i) {
+        graph[transitions[i]->startState].push_back(transitions[i]);
+    }
+}
+
+void StackParser::parse(ofstream &fout) {
+    queue<ParseState> q;
+    stack<string> s;
+    string output = "";
+    bool foundOutput = false;
+    s.push(initStackSymbol);
+    for (int i = 0; i < inputs.size(); ++i) {
+        fout<<"For input : "<<inputs[i]<<" the following outputs were found:\n";
+        cout<<"Currently parsing input "<<inputs[i]<<" ...\n";
+
+        foundOutput = false;
+
+        ParseState y = ParseState(initState, s, inputs[i], output, {});
+        q.push(y);
+
+        while (!q.empty()) {
+            ParseState now = q.front();
+            q.pop();
+
+            for (const Transition *t: graph[now.currState]) {
+                string pInitState = t->endState, pInput = now.currInput, pOutput = now.currOutput;
+                vector<Transition> pPath = now.path;
+                stack<string> pS = now.s;
+
+                if (t->input == "^" || t->input == string(1, pInput[0])) {
+                    if (t->input != "^") {
+                        pInput.erase(pInput.begin());
+                    }
+
+                    if (t->stackRemove == LAMBDA || ((!(pS.empty())) && (t->stackRemove == pS.top()))) {
+                        if (t->stackRemove != LAMBDA) pS.pop();
+
+                        if (t->stackAdd != LAMBDA) {
+                            string aux = t->stackAdd;
+                            for (int i = aux.size() - 1; i >= 0; i--) {
+                                pS.push(string(1, aux[i]));
+                            }
+                        }
+
+                        if (t->output != LAMBDA) {
+                            pOutput += t->output;
+                        }
+
+                        pPath.push_back(*t);
+                        ParseState x = ParseState(t->endState, pS, pInput, pOutput, pPath);
+                        if (this->hasFinalStates && finalStates.find(x.currState) != finalStates.end() &&
+                            x.currInput == "") {
+                            fout << "Output [by final state] : " << x.currOutput << "\n";
+                            foundOutput = true;
+                        } else if (!this->hasFinalStates && (x.s).size() == 0) {
+                            fout << "Output [by empty stack] : " << x.currOutput << "\n";
+                            foundOutput = true;
+                        } else {
+                            q.push(x);
+                        }
+                    }
+                }
+            }
+        }
+
+        if(!foundOutput) {
+            fout << "None\n";
+        }
+    }
+
+    cout<<"Parsing ended.\n";
+}
+
+// ParseState.h
+
+#ifndef TC_PROIECT_1_4_PARSESTATE_H
+#define TC_PROIECT_1_4_PARSESTATE_H
+
+using namespace std;
+
+#include <stack>
+#include <iostream>
+#include "Transition.h"
+#include <vector>
+
+class ParseState {
+public:
+    ParseState(const string currState, stack<string> s, string currInput, string currOutput, vector<Transition> path);
+    string currState;
+    string currInput;
+    string currOutput;
+    stack<string> s;
+    vector<Transition> path;
+
+    friend ostream &operator <<(ostream &out, ParseState& p){
+        out << "Current State: "<<p.currState<<" Current Input: "<<p.currInput<<" Current Output: "<<p.currOutput<<" Stack: ";
+        stack<string> aux = p.s;
+        while (!((p.s).empty())) {
+            out<<(p.s).top()<<" ";
+            (p.s).pop();
+        }
+        p.s = aux;
+        return out;
+    }
+};
+
+
+#endif //TC_PROIECT_1_4_PARSESTATE_H
+
+// ParseState.cpp
+
+#include "ParseState.h"
+#include "Transition.h"
+#include <vector>
+
+ParseState::ParseState(const string currState, stack<string> s, string currInput, string currOutput, vector<Transition> path) {
+    this->currState = currState;
+    this->s = s;
+    this->currInput = currInput;
+    this->currOutput = currOutput;
+    this->path = path;
+}
+
+// Transition.h
+
+#ifndef TC_PROIECT_1_4_TRANSITION_H
+#define TC_PROIECT_1_4_TRANSITION_H
+
+#include <iostream>
+
+using namespace std;
+
+class Transition {
+public:
+    Transition(string startState, string endState, string input, string stack, string output);
+    string startState;
+    string endState;
+    string input;
+    string output;
+    string stackRemove;
+    string stackAdd;
+
+    friend ostream &operator <<(ostream &out,  const Transition& t){
+        out << "Transition: "<<t.startState<<" "<<t.input<<" "<<t.stackRemove<<"|"<<t.stackAdd<<" "<<t.output<<" "<<t.endState;
+        return out;
+    }
+
+    friend bool operator<(Transition x, Transition y) {
+        return x.startState < y.startState;
+    }
+};
+
+
+#endif //TC_PROIECT_1_4_TRANSITION_H
+
+// Transition.cpp
+
+#include "Transition.h"
+#include "auxiliary.h"
+#include <vector>
+
+Transition::Transition(string startState, string endState, string input, string stack, string output) {
+    this->startState = startState;
+    this->endState = endState;
+    this->input = input;
+    vector<string> splitStack = splitString(stack, "|");
+    this->stackRemove = splitStack[0];
+    this->stackAdd = splitStack[1];
+    this->output = output;
+}
+
+// auxiliary.h
+
+#ifndef TC_PROIECT_1_4_AUXILIARY_H
+#define TC_PROIECT_1_4_AUXILIARY_H
+
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+static vector<string> splitString(string str, string delimiter)
+{
+    int start = 0;
+    vector<string> tokens = {};
+    int end = str.find(delimiter);
+    while (end != -1) {
+        tokens.push_back(str.substr(start, end - start));
+        start = end + delimiter.size();
+        end = str.find(delimiter, start);
+    }
+
+    tokens.push_back(str.substr(start, end - start));
+
+    return tokens;
+}
+
+#endif //TC_PROIECT_1_4_AUXILIARY_H
+
+
+// input.in
+
+abbbaa
+abaabb
+
+// stackParser.in
+
+a b
+1 2 33
+q0 q1 q2
+q0
+1
+q2
+~
+q0 ^ ~|S~ ^ q1
+q1 ^ ~|~ ^ q2
+q1 ^ S|aSbS 1 q1
+q1 ^ S|bSaS 2 q1
+q1 ^ S|^ 33 q1
+q1 a a|^ ^ q1
+q1 b b|^ ^ q1
+
+// output1.out
+
+For input : abbbaa
+Output [by final state] : 1322333
+For input : abaabb
+Output [by final state] : 1231333
+Output [by final state] : 1311333
+
+// stackParser2.in
+
+a b
+1 2 3
+q0 q1 q2
+q0
+0
+~
+q0 ^ ~|S~ ^ q1
+q1 ^ ~|~ ^ q2
+q1 ^ S|aSbS 1 q1
+q1 ^ S|bSaS 2 q1
+q1 ^ S|^ 3 q1
+q1 a a|^ ^ q1
+q1 b b|^ ^ q1
+
+// output2.out
+
+For input : abbbaa the following outputs were found:
+None
+For input : abaabb the following outputs were found:
+None
+
+
+
+

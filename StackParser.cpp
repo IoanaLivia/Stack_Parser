@@ -86,7 +86,7 @@ void StackParser::parse(ofstream &fout) {
     s.push(initStackSymbol);
     for (int i = 0; i < inputs.size(); ++i) {
         fout<<"For input : "<<inputs[i]<<" the following outputs were found:\n";
-        cout<<"Currently parsing input "<<inputs[i]<<"\n";
+        cout<<"Currently parsing input "<<inputs[i]<<" ...\n";
 
         foundOutput = false;
 
