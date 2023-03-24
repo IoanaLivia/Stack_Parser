@@ -10,16 +10,14 @@
 #include <unordered_map>
 #include <set>
 #include "Transition.h"
-
 using namespace std;
 
 class StackParser {
 public:
-    StackParser(istream&, istream&, ofstream&);
-    void parse();
+    StackParser(istream&, istream&);
+    void parse(ofstream&);
     vector<string> inputs;
-    static const char STACK_BASE = '_';
-    static const char LAMBDA = '^';
+    static const string LAMBDA;
     bool hasFinalStates;
     string initState;
     string initStackSymbol;
@@ -27,7 +25,7 @@ public:
     vector<string> states;
     vector<Transition*> transitions;
     unordered_map<string, vector<Transition*>> graph;
+    set<string> inputAlph;
+    set<string> outputAlph;
 };
-
-
 #endif //TC_PROIECT_1_4_STACKPARSER_H

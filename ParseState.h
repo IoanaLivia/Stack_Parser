@@ -1,7 +1,3 @@
-//
-// Created by ioana on 3/20/2023.
-//
-
 #ifndef TC_PROIECT_1_4_PARSESTATE_H
 #define TC_PROIECT_1_4_PARSESTATE_H
 

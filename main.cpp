@@ -7,22 +7,20 @@ Pentru fiecare astfel de sir se afiseaza toate iesirile(siruri peste alfabetul d
 (Atentie !pot exista 0, 1 sau mai multe iesiri pt acelasi sir de intrare). */
 
 #include <iostream>
-#include <fstream>
-
 #include "StackParser.h"
 
 using namespace std;
 
 int main()
 {
-    ifstream in("stackParser.in");
+    ifstream in("stackParser2.in");
     ifstream fin("input.in");
 
     ofstream fout("output.out");
 
-    StackParser parser(in, fin, fout);
+    StackParser parser(in, fin);
 
-    parser.parse();
+    parser.parse(fout);
 
     in.close();
     fin.close();
